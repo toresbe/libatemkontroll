@@ -30,3 +30,6 @@
 *.exe
 *.out
 *.app
+
+# Yeah boi I use vim
+*.swp
