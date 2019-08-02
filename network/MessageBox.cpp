@@ -35,6 +35,10 @@ void MessageBox::process_events() {
         is_initialized = false;
         *this << Message(Message::Types::ACK);
     }
+    // At this stage, after the relevant parsing callback has been invoked
+    // to update the internal state of the class, we need to see if any get
+    // or set functions have requested the results, and if so, trigger the
+    // relevant callback or whatever
     current_UID = msg.uid;
 }
 
