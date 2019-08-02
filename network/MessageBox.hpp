@@ -26,3 +26,5 @@ class MessageBox {
         typedef std::map<std::string, callback_t> callback_map_t;
         callback_map_t callback_map;
 };
+
+void append_word(std::vector<uint8_t> & vector, uint16_t value);

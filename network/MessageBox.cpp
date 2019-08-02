@@ -89,7 +89,7 @@ std::vector<uint8_t> MessageBox::serialize(const Message & msg) {
     append_word(raw_message, msg.sequence_num); // PackageID
     append_word(raw_message, 0); // Padding word
     //append_word(raw_message, 0); // Padding word
-    append_word(raw_message, msg.sequence_num); // PackageID
+    append_word(raw_message, package_ID); // PackageID
     raw_message.insert(raw_message.end(), msg.payload.begin(), msg.payload.end());
 
     hexdump(raw_message);
