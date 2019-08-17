@@ -17,7 +17,10 @@ class MessageBox {
         std::mutex inbox_mutex;
         std::mutex outbox_mutex;
 
+        bool handler_thread_running = true;
         std::thread handler_thread;
+
+        std::promise<void> connection_promise;
 
         typedef std::function<void(const Message & message)> callback_t;
         void registerCallback(const std::string & command_name, const callback_t & callback_function);
@@ -37,8 +40,9 @@ class MessageBox {
         uint16_t packet_seq_id = 0;
         void sendHello();
         std::vector<uint8_t> serialize(const Message & msg);
-        typedef std::map<std::string, callback_t> callback_map_t;
-        callback_map_t callback_map;
+
+        std::map<std::string, callback_t> callback_map;
+
         void event_loop();
 };
 

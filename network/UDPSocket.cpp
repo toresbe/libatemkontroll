@@ -34,14 +34,14 @@ void UDPSocket::send(std::vector<uint8_t> raw_message) {
     if (x == -1) {
         std::cout << "send failed: " << std::strerror(errno) << '\n';
     } else {
-        std::cout << "Sent " << x << " bytes\n";
+        //std::cout << "Sent " << x << " bytes\n";
     }
 }
 
 std::vector<uint8_t> UDPSocket::recv() {
     std::vector<uint8_t> buffer(1024);
 
-    std::cout << "Trying to receive\n";
+    //std::cout << "Trying to receive\n";
     auto n_bytes = recvfrom(sock,buffer.data(),buffer.size(),0, f_addrinfo->ai_addr, &f_addrinfo->ai_addrlen);
 
     if (n_bytes != -1) {

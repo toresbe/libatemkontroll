@@ -25,6 +25,8 @@ class Message {
         Message(std::vector<uint8_t> raw_message);
         Message(Types type);
         static Message ACKFrom(const Message & msg);
+        static Message Command(std::string cmd_name, std::vector<uint8_t> payload);
         Message();
+        void build_cmd_payload(const std::vector<uint8_t> &payload);
 };
 Message MakeHelloMessage();

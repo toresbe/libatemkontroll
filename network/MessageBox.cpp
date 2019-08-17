@@ -30,26 +30,28 @@ void MessageBox::process_events() {
 
         auto callback = callback_map.find(msg.cmd_name);
         if(callback == callback_map.end()) {
-            std::cout << "Received unhandled \"" << msg.cmd_name << "\" packet\n";
+            //std::cout << "Received unhandled \"" << msg.cmd_name << "\" packet\n";
         } else {
-            std::cout << "Received handled \"" << msg.cmd_name << "\" packet\n";
+            //std::cout << "Received handled \"" << msg.cmd_name << "\" packet\n";
             callback->second(msg);
         }
     }
 }
 
 void MessageBox::event_loop() {
-    while(1) {
+    while(handler_thread_running) {
         auto incoming = socket.recv();
-        hexdump(incoming);
+        //hexdump(incoming);
         auto msg = Message(incoming);
-        std::cout << "msg has uid " << msg.uid << " ackid " << msg.ackid << " type " << msg.type << " seq_num " << msg.sequence_num << "\n";
+        //std::cout << "msg has uid " << msg.uid << " ackid " << msg.ackid \
+        // << " type " << msg.type << " seq_num " << msg.sequence_num << "\n";
         // Apparently this is the only way to tell if the initial state dump is over.
         // After this, the switcher will begin expecting acknowledgements of every
         // packet.
         if(!(this->is_initialized | msg.payload.size())) {
             std::cout << "Now we are initialized!\n";
             is_initialized = true;
+            connection_promise.set_value();
         }
 
         if(msg.type & Message::Types::AckReq) {
@@ -82,29 +84,35 @@ void MessageBox::event_loop() {
         // relevant callback or whatever
         session_id = msg.uid;
     }
+    std::cout << "Leaving handler thread\n";
 }
 
 MessageBox::~MessageBox() {
+    handler_thread_running = false;
     handler_thread.join();
 }
 
 MessageBox::MessageBox() {
 }
 
+void foo(const Message & msg) {
+    std::cout << "lol wtf is going on  \n";
+}
+
 void MessageBox::registerCallback(const std::string & command_name, const callback_t & callback_function) {
     if(callback_map.find(command_name) != callback_map.end()) {
         std::cout << "Warning: Re-registering callback \"" << command_name << "\"!\n";
     } else {
-        std::cout << "Rgistering callback \"" << command_name << "\"!\n";
+        std::cout << "Registering callback \"" << command_name << "\"!\n";
     }
     callback_map[command_name] = callback_function;
 }
 
 void MessageBox::connect(std::string hostname) {
     socket.open(hostname);
-    auto hello = MakeHelloMessage();
-    *this << hello;
     handler_thread = std::thread{&MessageBox::event_loop, this};
+    *this << MakeHelloMessage();
+    connection_promise.get_future().wait();
 };
 
 void MessageBox::operator<< (const Message & msg) {
@@ -136,6 +144,6 @@ std::vector<uint8_t> MessageBox::serialize(const Message & msg) {
     append_word(raw_message, 0); // Padding word
     append_word(raw_message, this_packet_seq_id); // PackageID
     raw_message.insert(raw_message.end(), msg.payload.begin(), msg.payload.end());
-    hexdump(raw_message);
+    //hexdump(raw_message);
     return raw_message;
 };
