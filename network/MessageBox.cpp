@@ -1,45 +1,91 @@
 #include "MessageBox.hpp"
+#include <future>
+#include <mutex>
+#include <memory>
 #include <iostream>
 #include <arpa/inet.h> // for htons()
 
 static void hexdump(std::vector<uint8_t> x) { for (auto i: x) { printf("%02X ", i); } printf("\n"); }
 
+// TODO: Implement retransmit. Currently, if a packet is lost,
+// we'll just give up.
+void timeout_function(int packet_seq_id) {
+}
+
+std::future<void> MessageBox::send_message(const Message &msg) {
+    std::lock_guard<std::mutex> lck (outbox_mutex);
+    std::vector<uint8_t> raw_message = serialize(msg);
+    auto promise = std::make_shared<std::promise<void>>();
+    pending_receipts[packet_seq_id] = promise;
+    socket.send(raw_message);
+    // TODO: Insert timeout here
+    return promise->get_future();
+}
+
 void MessageBox::process_events() {
-    auto incoming = socket.recv();
-    hexdump(incoming);
-    auto msg = Message(incoming);
-    std::cout << "msg has uid " << msg.uid << " ackid " << msg.ackid << " type " << msg.type << " seq_num " << msg.sequence_num << "\n";
-    // Apparently this is the only way to tell if the initial state dump is over.
-    // After this, the switcher will begin expecting acknowledgements of every
-    // packet.
-    if(!(this->is_initialized | msg.payload.size())) {
-        std::cout << "Now we are initialized!\n";
-        is_initialized = true;
-    }
-    if(msg.type & Message::Types::AckReq) {
-        if(is_initialized) {
-            *this << Message::ACKFrom(msg);
+    while(!inbox.empty()) {
+        std::lock_guard<std::mutex> lck (inbox_mutex);
+        auto msg = inbox.front();
+        inbox.pop_front();
+
+        auto callback = callback_map.find(msg.cmd_name);
+        if(callback == callback_map.end()) {
+            std::cout << "Received unhandled \"" << msg.cmd_name << "\" packet\n";
+        } else {
+            std::cout << "Received handled \"" << msg.cmd_name << "\" packet\n";
+            callback->second(msg);
         }
-        if(msg.payload.size()) {
-            auto callback = callback_map.find(msg.cmd_name);
-            if(callback == callback_map.end()) {
-                std::cout << "Received unhandled \"" << msg.cmd_name << "\" packet\n";
-            } else {
-                std::cout << "Received handled \"" << msg.cmd_name << "\" packet\n";
-                callback->second(msg);
+    }
+}
+
+void MessageBox::event_loop() {
+    while(1) {
+        auto incoming = socket.recv();
+        hexdump(incoming);
+        auto msg = Message(incoming);
+        std::cout << "msg has uid " << msg.uid << " ackid " << msg.ackid << " type " << msg.type << " seq_num " << msg.sequence_num << "\n";
+        // Apparently this is the only way to tell if the initial state dump is over.
+        // After this, the switcher will begin expecting acknowledgements of every
+        // packet.
+        if(!(this->is_initialized | msg.payload.size())) {
+            std::cout << "Now we are initialized!\n";
+            is_initialized = true;
+        }
+
+        if(msg.type & Message::Types::AckReq) {
+            if(is_initialized) {
+                *this << Message::ACKFrom(msg);
+            }
+            if(msg.payload.size()) {
+                inbox_mutex.lock();
+                inbox.push_back(msg);
+                inbox_mutex.unlock();
             }
         }
+
+        if(msg.type & Message::Types::Hello) {
+            std::cout << "Received new hello packet\n";
+            is_initialized = false;
+            *this << Message(Message::Types::ACK);
+        }
+
+        if(msg.type & Message::Types::ACK) {
+            auto pending_promise = pending_receipts.find(msg.ackid);
+            if(pending_promise != pending_receipts.end()) {
+                pending_receipts.erase(msg.ackid);
+                pending_promise->second->set_value();
+            }
+        }
+        // At this stage, after the relevant parsing callback has been invoked
+        // to update the internal state of the class, we need to see if any get
+        // or set functions have requested the results, and if so, trigger the
+        // relevant callback or whatever
+        session_id = msg.uid;
     }
-    if(msg.type & Message::Types::Hello) {
-        std::cout << "Received new hello packet\n";
-        is_initialized = false;
-        *this << Message(Message::Types::ACK);
-    }
-    // At this stage, after the relevant parsing callback has been invoked
-    // to update the internal state of the class, we need to see if any get
-    // or set functions have requested the results, and if so, trigger the
-    // relevant callback or whatever
-    current_UID = msg.uid;
+}
+
+MessageBox::~MessageBox() {
+    handler_thread.join();
 }
 
 MessageBox::MessageBox() {
@@ -58,11 +104,11 @@ void MessageBox::connect(std::string hostname) {
     socket.open(hostname);
     auto hello = MakeHelloMessage();
     *this << hello;
+    handler_thread = std::thread{&MessageBox::event_loop, this};
 };
 
 void MessageBox::operator<< (const Message & msg) {
-    std::vector<uint8_t> raw_message = serialize(msg);
-    socket.send(raw_message);
+    send_message(msg);
 };
 
 void append_word(std::vector<uint8_t> & vector, uint16_t value) {
@@ -77,21 +123,19 @@ static uint16_t get_word(const std::vector<uint8_t> & input, int index) {
 
 std::vector<uint8_t> MessageBox::serialize(const Message & msg) {
     std::vector<uint8_t> raw_message;
-    uint16_t package_ID = 0;
+    uint16_t this_packet_seq_id = 0;
 
     // Hello and ACK packets do not increment the packet counter nor do they include it
-    if(!(msg.type & (Message::Types::Hello | Message::Types::ACK))) package_ID = ++packet_seq_id;
+    if(!(msg.type & (Message::Types::Hello | Message::Types::ACK))) this_packet_seq_id = ++packet_seq_id;
 
     // Message type and n_bytes are combined in the first word of the message
     append_word(raw_message, (msg.type << 11) | (msg.payload.size() + SIZE_OF_HEADER));
-    append_word(raw_message, current_UID);
+    append_word(raw_message, session_id);
     append_word(raw_message, msg.ackid); // ACK_ID ; dunno what this is yet
     append_word(raw_message, msg.sequence_num); // PackageID
     append_word(raw_message, 0); // Padding word
-    //append_word(raw_message, 0); // Padding word
-    append_word(raw_message, package_ID); // PackageID
+    append_word(raw_message, this_packet_seq_id); // PackageID
     raw_message.insert(raw_message.end(), msg.payload.begin(), msg.payload.end());
-
     hexdump(raw_message);
     return raw_message;
 };

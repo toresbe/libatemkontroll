@@ -1,4 +1,8 @@
 #pragma once
+#include <memory>
+#include <mutex>
+#include <deque>
+#include <future>
 #include <map>
 #define SIZE_OF_HEADER 0xc
 #include <string>
@@ -9,22 +13,33 @@
 
 class MessageBox {
     public:
+        std::deque<Message> inbox;
+        std::mutex inbox_mutex;
+        std::mutex outbox_mutex;
+
+        std::thread handler_thread;
+
         typedef std::function<void(const Message & message)> callback_t;
         void registerCallback(const std::string & command_name, const callback_t & callback_function);
+
         void connect(std::string hostname);
         void operator<<(const Message &msg);
-        void parse_datagram(const std::vector<uint8_t> &dgram);
         void process_events();
         MessageBox();
+        ~MessageBox();
+        std::future<void> send_message(const Message &msg);
+        std::map<uint16_t, std::shared_ptr<std::promise<void>>> pending_receipts;
     private:
-        bool is_initialized = false;
-        uint16_t current_UID = 0x1337;
-        uint16_t packet_seq_id = 0;
         UDPSocket socket;
+        bool is_initialized = false;
+        uint16_t session_id = 0x1337; // The initial session id will be
+                                      // changed by the mixer
+        uint16_t packet_seq_id = 0;
         void sendHello();
         std::vector<uint8_t> serialize(const Message & msg);
         typedef std::map<std::string, callback_t> callback_map_t;
         callback_map_t callback_map;
+        void event_loop();
 };
 
 void append_word(std::vector<uint8_t> & vector, uint16_t value);

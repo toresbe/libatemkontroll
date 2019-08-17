@@ -1,5 +1,6 @@
 #include "features/MixEffects.hpp"
 #include <assert.h>
+#include <iostream>
 
 ATEMMixEffects::ATEMMixEffects(MessageBox * mbox) {
     this->mbox = mbox;
@@ -24,5 +25,6 @@ void ATEMMixEffects::set_program(uint16_t input_index) {
                                      0x00};// Unknown
     append_word(arguments, input_index);
     inputset.payload = build_cmd_payload("CPgI", arguments);
-    *mbox << inputset;
+    auto future = mbox->send_message(inputset);
+    future.wait();
 };
