@@ -43,6 +43,9 @@ int main(int argc, char *argv[]) {
                 atem.MixEffects.take_cut();
             }
         }
+    while(1) {
+        atem.process_events();
+    };
     }
     return(0);
 }

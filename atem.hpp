@@ -10,6 +10,6 @@ class ATEM {
         ATEMDeviceInfo DeviceInfo;
         ATEMMixEffects MixEffects;
         void connect(std::string hostname);
+        void process_events();
         ATEM();
 };
-
