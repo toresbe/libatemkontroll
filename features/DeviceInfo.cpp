@@ -4,6 +4,7 @@
 #include <assert.h>
 
 void ATEMDeviceInfo::dummy_callback(const Message &message) {
+    (void)message; // avoid unused var message
     std::cout << "Dummy callback encountered\n";
 }
 
@@ -11,7 +12,7 @@ ATEMDeviceInfo::ATEMDeviceInfo(MessageBox * mbox) {
     this->mbox = mbox;
     mbox->registerCallback("_ver", std::bind(&ATEMDeviceInfo::dummy_callback, this, std::placeholders::_1));
     mbox->registerCallback("_top", std::bind(&ATEMDeviceInfo::parse_topology, this, std::placeholders::_1));
-};
+}
 
 void ATEMDeviceInfo::parse_topology(const Message &message) {
     assert(message.payload.size() == 12);
@@ -24,4 +25,4 @@ void ATEMDeviceInfo::parse_topology(const Message &message) {
     num_DVEs = message.payload[6];
     num_supersrcs = message.payload[7];
     has_SD_output = message.payload[9];
-};
+}

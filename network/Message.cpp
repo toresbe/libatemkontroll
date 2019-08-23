@@ -5,7 +5,7 @@
 
 static uint16_t get_word(const std::vector<uint8_t> & input, int index) {
     return input[index+1] | (input[index] << 8);
-};
+}
 
 void Message::build_cmd_payload(const std::vector<uint8_t> &arguments) {
     payload.clear();
@@ -21,6 +21,7 @@ Message::Message(std::vector<uint8_t> raw_message) {
     if(raw_message.size() < SIZE_OF_HEADER) return;
     this->type = raw_message[0] >> 3;
     auto message_size = get_word(raw_message, 0) | 0xF800; // need to mask away message type
+    (void) message_size; // avoid unused variable warning -- TODO: sanity check
     uid = get_word(raw_message, 2);
     ackid = get_word(raw_message, 4);
     // we skip the next 4 bytes because we don't know what they do
@@ -31,7 +32,7 @@ Message::Message(std::vector<uint8_t> raw_message) {
         cmd_name = std::string(raw_message.begin() + 16, raw_message.begin() + 20);
         payload = std::vector<uint8_t>(raw_message.begin() + SIZE_OF_HEADER, raw_message.end());
     }
-};
+}
 
 Message::Message(Message::Types packet_type) {
     type = packet_type;
@@ -46,7 +47,7 @@ Message Message::Command(std::string cmd_name, std::vector<uint8_t> payload) {
     cmd.cmd_name = cmd_name;
     cmd.build_cmd_payload(payload);
     return cmd;
-};
+}
 
 Message Message::ACKFrom(const Message &msg) {
         Message ackmsg(Message::Types::ACK);

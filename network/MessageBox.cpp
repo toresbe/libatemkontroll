@@ -5,11 +5,12 @@
 #include <iostream>
 #include <arpa/inet.h> // for htons()
 
-static void hexdump(std::vector<uint8_t> x) { for (auto i: x) { printf("%02X ", i); } printf("\n"); }
+//static void hexdump(std::vector<uint8_t> x) { for (auto i: x) { printf("%02X ", i); } printf("\n"); }
 
 // TODO: Implement retransmit. Currently, if a packet is lost,
 // we'll just give up.
 void timeout_function(int packet_seq_id) {
+    (void)packet_seq_id; // suppress unused variable error
 }
 
 std::future<void> MessageBox::send_message(const Message &msg) {
@@ -43,11 +44,12 @@ void MessageBox::event_loop() {
         auto incoming = socket.recv();
         //hexdump(incoming);
         auto msg = Message(incoming);
-        //std::cout << "msg has uid " << msg.uid << " ackid " << msg.ackid \
+        /*std::cout << "msg has uid " << msg.uid << " ackid " << msg.ackid \
         // << " type " << msg.type << " seq_num " << msg.sequence_num << "\n";
         // Apparently this is the only way to tell if the initial state dump is over.
         // After this, the switcher will begin expecting acknowledgements of every
         // packet.
+        */
         if(!(this->is_initialized | msg.payload.size())) {
             std::cout << "Now we are initialized!\n";
             is_initialized = true;
@@ -95,10 +97,6 @@ MessageBox::~MessageBox() {
 MessageBox::MessageBox() {
 }
 
-void foo(const Message & msg) {
-    std::cout << "lol wtf is going on  \n";
-}
-
 void MessageBox::registerCallback(const std::string & command_name, const callback_t & callback_function) {
     if(callback_map.find(command_name) != callback_map.end()) {
         std::cout << "Warning: Re-registering callback \"" << command_name << "\"!\n";
@@ -113,21 +111,16 @@ void MessageBox::connect(std::string hostname) {
     handler_thread = std::thread{&MessageBox::event_loop, this};
     *this << MakeHelloMessage();
     connection_promise.get_future().wait();
-};
+}
 
 void MessageBox::operator<< (const Message & msg) {
     send_message(msg);
-};
+}
 
 void append_word(std::vector<uint8_t> & vector, uint16_t value) {
     vector.push_back((uint8_t)(value >> 8 & 0xFF));
     vector.push_back((uint8_t)(value & 0xFF));
 }
-
-// FIXME: This function is duplicated
-static uint16_t get_word(const std::vector<uint8_t> & input, int index) {
-    return input[index] | (input[index+1] << 16);
-};
 
 std::vector<uint8_t> MessageBox::serialize(const Message & msg) {
     std::vector<uint8_t> raw_message;
@@ -146,4 +139,4 @@ std::vector<uint8_t> MessageBox::serialize(const Message & msg) {
     raw_message.insert(raw_message.end(), msg.payload.begin(), msg.payload.end());
     //hexdump(raw_message);
     return raw_message;
-};
+}

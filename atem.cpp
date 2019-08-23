@@ -5,7 +5,7 @@
 
 ATEM::ATEM() : DeviceInfo(&mbox), MixEffects(&mbox)
 {
-};
+}
 
 void ATEM::connect(std::string hostname) {
     mbox.connect(hostname);
