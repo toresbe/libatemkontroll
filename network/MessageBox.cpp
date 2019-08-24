@@ -3,9 +3,10 @@
 #include <mutex>
 #include <memory>
 #include <iostream>
+#include <vector>
 #include <arpa/inet.h> // for htons()
 
-//static void hexdump(std::vector<uint8_t> x) { for (auto i: x) { printf("%02X ", i); } printf("\n"); }
+static void hexdump(std::vector<uint8_t> x) { for (auto i: x) { printf("%02X ", i); } printf("\n"); }
 
 // TODO: Implement retransmit. Currently, if a packet is lost,
 // we'll just give up.
@@ -40,6 +41,34 @@ void MessageBox::process_events() {
     }
 }
 
+// FIXME: This is such a nasty hack...
+std::vector<Message> read_messages(std::vector<uint8_t> datagram) {
+    std::vector<Message> messages;
+    int offset = SIZE_OF_HEADER;
+
+    auto header = std::vector<uint8_t>(datagram.begin(), datagram.begin() + SIZE_OF_HEADER);
+    auto message_size = Message::get_word(header, 0) & 0x07FF; // need to mask away message type
+    //std::cout << "Packet length is "<< message_size << "\n";
+    auto type = header[0] >> 3;
+    if(!(type & Message::Types::AckReq)) {
+        messages.push_back(Message(datagram));
+        return messages;
+    }
+
+    while(datagram.begin() + offset != datagram.end()) {
+        auto next_command_payload = std::vector<uint8_t>(datagram.begin() + offset, datagram.end());
+        auto command_size = Message::get_word(next_command_payload, 0);
+        offset += command_size;
+        next_command_payload.resize(command_size);
+        std::cout << "Command length is "<< command_size << "\n";
+        next_command_payload.insert(next_command_payload.begin(), header.begin(), header.end());
+        hexdump(next_command_payload);
+        messages.push_back(Message(next_command_payload));
+    }
+    return messages;
+};
+
+
 void MessageBox::event_loop() {
     while(handler_thread_running) {
         auto incoming = socket.recv();
@@ -61,9 +90,11 @@ void MessageBox::event_loop() {
             if(is_initialized) {
                 *this << Message::ACKFrom(msg);
             }
-            if(msg.payload.size()) {
-                std::lock_guard<std::mutex> lck (inbox_mutex);
-                inbox.push_back(msg);
+            for(auto msg: read_messages(incoming)) {
+                if(msg.payload.size()) {
+                    std::lock_guard<std::mutex> lck (inbox_mutex);
+                    inbox.push_back(msg);
+                }
             }
         }
 

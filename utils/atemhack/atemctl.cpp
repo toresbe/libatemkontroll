@@ -38,6 +38,8 @@ int main(int argc, char *argv[]) {
         if(sscanf(line.c_str(), "%d, %d", &input, &output) == 2) {
             printf("Got command: output bus %d -> input %d\n", output, input);
             command(atem, output, input);
+        } else {
+            printf("SYNTAX ERROR\nREADY.\n");
         }
     }
 }

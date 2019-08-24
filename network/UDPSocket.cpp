@@ -39,7 +39,7 @@ void UDPSocket::send(std::vector<uint8_t> raw_message) {
 }
 
 std::vector<uint8_t> UDPSocket::recv() {
-    std::vector<uint8_t> buffer(1024);
+    std::vector<uint8_t> buffer(2048);
 
     //std::cout << "Trying to receive\n";
     auto n_bytes = recvfrom(sock,buffer.data(),buffer.size(),0, f_addrinfo->ai_addr, &f_addrinfo->ai_addrlen);
