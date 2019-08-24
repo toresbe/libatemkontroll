@@ -16,6 +16,7 @@ class MessageBox {
         std::deque<Message> inbox;
         std::mutex inbox_mutex;
         std::mutex outbox_mutex;
+        std::mutex pending_mutex;
 
         bool handler_thread_running = true;
         std::thread handler_thread;

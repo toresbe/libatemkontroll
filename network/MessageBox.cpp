@@ -17,6 +17,7 @@ std::future<void> MessageBox::send_message(const Message &msg) {
     std::lock_guard<std::mutex> lck (outbox_mutex);
     std::vector<uint8_t> raw_message = serialize(msg);
     auto promise = std::make_shared<std::promise<void>>();
+    std::lock_guard<std::mutex> pendlck (pending_mutex);
     pending_receipts[packet_seq_id] = promise;
     socket.send(raw_message);
     // TODO: Insert timeout here
@@ -31,9 +32,9 @@ void MessageBox::process_events() {
 
         auto callback = callback_map.find(msg.cmd_name);
         if(callback == callback_map.end()) {
-            //std::cout << "Received unhandled \"" << msg.cmd_name << "\" packet\n";
+            std::cout << "Received unhandled \"" << msg.cmd_name << "\" packet\n";
         } else {
-            //std::cout << "Received handled \"" << msg.cmd_name << "\" packet\n";
+            std::cout << "Received handled \"" << msg.cmd_name << "\" packet\n";
             callback->second(msg);
         }
     }
@@ -61,9 +62,8 @@ void MessageBox::event_loop() {
                 *this << Message::ACKFrom(msg);
             }
             if(msg.payload.size()) {
-                inbox_mutex.lock();
+                std::lock_guard<std::mutex> lck (inbox_mutex);
                 inbox.push_back(msg);
-                inbox_mutex.unlock();
             }
         }
 
@@ -74,10 +74,11 @@ void MessageBox::event_loop() {
         }
 
         if(msg.type & Message::Types::ACK) {
+            std::lock_guard<std::mutex> lck (pending_mutex);
             auto pending_promise = pending_receipts.find(msg.ackid);
             if(pending_promise != pending_receipts.end()) {
-                pending_receipts.erase(msg.ackid);
                 pending_promise->second->set_value();
+                pending_receipts.erase(msg.ackid);
             }
         }
         // At this stage, after the relevant parsing callback has been invoked

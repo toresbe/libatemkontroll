@@ -1,5 +1,5 @@
 #include "DeviceInfo.hpp"
-#include <nlohmann/json.hpp>
+#include <json.hpp>
 #include <functional>
 #include <iostream>
 #include <assert.h>
@@ -15,9 +15,26 @@ ATEMDeviceInfo::ATEMDeviceInfo(MessageBox * mbox) {
     this->mbox = mbox;
     mbox->registerCallback("_ver", std::bind(&ATEMDeviceInfo::dummy_callback, this, std::placeholders::_1));
     mbox->registerCallback("_top", std::bind(&ATEMDeviceInfo::parse_topology, this, std::placeholders::_1));
+    mbox->registerCallback("Time", std::bind(&ATEMDeviceInfo::handle_state_change, this, std::placeholders::_1));
+}
+
+void update_state(const json &data) {
+    std::cout << data.dump() << "\n";
+}
+
+void ATEMDeviceInfo::handle_state_change(const Message &message) {
+    json state_change;
+    char *timecode = "00:00:00.00";
+    snprintf(timecode, sizeof(timecode), "%02d:%02d:%02d.%02d",
+            message.payload[0], message.payload[1],
+            message.payload[2], message.payload[3]);
+
+    state_change["timecode"] = timecode;
+    update_state(state_change);
 }
 
 void ATEMDeviceInfo::parse_topology(const Message &message) {
+    std::cout << "Topology callback encountered\n";
     assert(message.payload.size() == 12);
     json state_update;
 
@@ -41,4 +58,6 @@ void ATEMDeviceInfo::parse_topology(const Message &message) {
     state_update["num_DVEs"] = num_DVEs;
     state_update["num_supersrcs"] = num_supersrcs;
     state_update["has_SD_output"] = has_SD_output;
+
+    update_state(state_update);
 }

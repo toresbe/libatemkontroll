@@ -1,9 +1,9 @@
 CC=cc
 CXX=g++
 RM=rm -f
-CPPFLAGS=-g -fPIC -std=gnu++11 -Wall -Wextra -I. -I /usr/include/atem
+CPPFLAGS=-g -std=gnu++11 -Wall -Wextra -I. -I /usr/include/atem
 LDFLAGS=-g 
-LDLIBS=-latemkontroll
+LDLIBS=-latemkontroll #-Wl,--whole-archive -lpthread -Wl,--no-whole-archive
 
 PROG=atemctl
 SRCS=atemctl.cpp

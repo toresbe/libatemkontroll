@@ -3,7 +3,7 @@ CXX=g++
 RM=rm -f
 MAKE=make
 CPPFLAGS=-g -pedantic -fPIC -std=gnu++11 -Wall -Wextra -I. 
-LDFLAGS=-shared -lpthread
+LDFLAGS=-shared -pthread
 
 TARGET_LIB=libatemkontroll.so
 SRCS=$(wildcard network/*.cpp) $(wildcard features/*.cpp) atem.cpp
