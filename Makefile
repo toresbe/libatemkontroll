@@ -3,10 +3,10 @@ CXX=g++
 RM=rm -f
 MAKE=make
 CPPFLAGS=-g -pedantic -fPIC -std=gnu++11 -Wall -Wextra -I. 
-LDFLAGS=-shared -pthread
+LDFLAGS=-shared -pthread -ldl
 
 TARGET_LIB=libatemkontroll.so
-SRCS=$(wildcard network/*.cpp) $(wildcard features/*.cpp) atem.cpp
+SRCS=$(wildcard network/*.cpp) $(wildcard features/*.cpp) atem.cpp loguru.cpp
 OBJS=$(subst .cpp,.o,$(SRCS)) 
 
 PREFIX=/usr

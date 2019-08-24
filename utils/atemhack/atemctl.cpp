@@ -1,8 +1,16 @@
 #include <iostream>
+#include <stdio.h>
+#include <unistd.h>
+#include <chrono>
+#include <thread>
 #include "atem.hpp"
 #include <cstring>
 #include <string>
+#include "loguru.hpp"
+#include <sys/select.h>
 
+#include <json.hpp>
+using json = nlohmann::json;
 
 uint16_t read_input_index(char *str) {
     int input_index;
@@ -12,6 +20,17 @@ uint16_t read_input_index(char *str) {
         exit(1);
     }
     return (uint16_t) input_index;
+}
+
+bool input_available() {
+    struct timeval tv;
+    fd_set fds;
+    tv.tv_sec = 0;
+    tv.tv_usec = 0;
+    FD_ZERO(&fds);
+    FD_SET(STDIN_FILENO, &fds);
+    select(STDIN_FILENO+1, &fds, NULL, NULL, &tv);
+    return (FD_ISSET(0, &fds));
 }
 
 int command(ATEM &atem, int bus, int input) {
@@ -30,16 +49,32 @@ int command(ATEM &atem, int bus, int input) {
 }
 
 int main(int argc, char *argv[]) {
+    loguru::init(argc, argv);
+    loguru::add_file("everything.log", loguru::Append, loguru::Verbosity_MAX);
+    LOG_F(INFO, "Starting up");
     ATEM atem;
     atem.connect("10.3.2.1");
-    int output, input;
-    for (std::string line; std::getline(std::cin, line);) {
-        atem.process_events();
-        if(sscanf(line.c_str(), "%d, %d", &input, &output) == 2) {
-            printf("Got command: output bus %d -> input %d\n", output, input);
-            command(atem, output, input);
-        } else {
-            printf("SYNTAX ERROR\nREADY.\n");
+
+    bool running = true;
+    while(running) 
+        if(input_available()) {
+            int output, input;
+            std::string line; 
+            std::getline(std::cin, line); 
+            if(sscanf(line.c_str(), "%d, %d", &input, &output) == 2) {
+                LOG_F(1, "Got command: output bus %d -> input %d", output, input);
+                command(atem, output, input);
+            } else {
+                LOG_F(WARNING, "SYNTAX ERROR.\n");
+            }
         }
+    auto events_string = atem.process_events();
+    json events;
+    try {
+        events = events_string;
+    } catch (std::exception &e) {
+                LOG_F(WARNING, "Invalid JSON returned.");
     }
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
 }

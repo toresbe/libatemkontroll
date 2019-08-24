@@ -5,6 +5,7 @@
 #include <iostream>
 #include <vector>
 #include <arpa/inet.h> // for htons()
+#include "loguru.hpp"
 
 static void hexdump(std::vector<uint8_t> x) { for (auto i: x) { printf("%02X ", i); } printf("\n"); }
 
@@ -25,7 +26,7 @@ std::future<void> MessageBox::send_message(const Message &msg) {
     return promise->get_future();
 }
 
-void MessageBox::process_events() {
+std::string MessageBox::process_events() {
     while(!inbox.empty()) {
         std::lock_guard<std::mutex> lck (inbox_mutex);
         auto msg = inbox.front();
@@ -33,12 +34,18 @@ void MessageBox::process_events() {
 
         auto callback = callback_map.find(msg.cmd_name);
         if(callback == callback_map.end()) {
-            std::cout << "Received unhandled \"" << msg.cmd_name << "\" packet\n";
+            LOG_F(INFO, "Received unhandled \"%s\" packet", msg.cmd_name.c_str());
         } else {
-            std::cout << "Received handled \"" << msg.cmd_name << "\" packet\n";
-            callback->second(msg);
+            LOG_F(INFO, "Received handled \"%s\" packet", msg.cmd_name.c_str());
+            event_messages.push_back(callback->second(msg).dump());
         }
     }
+
+    if(event_messages.size()) {
+        auto event_message = event_messages.front();
+        event_messages.pop_front();
+        return event_message;
+    } else return "";
 }
 
 // FIXME: This is such a nasty hack...
@@ -60,9 +67,9 @@ std::vector<Message> read_messages(std::vector<uint8_t> datagram) {
         auto command_size = Message::get_word(next_command_payload, 0);
         offset += command_size;
         next_command_payload.resize(command_size);
-        std::cout << "Command length is "<< command_size << "\n";
+        LOG_F(2, "Command length is %d", command_size);
         next_command_payload.insert(next_command_payload.begin(), header.begin(), header.end());
-        hexdump(next_command_payload);
+        //hexdump(next_command_payload);
         messages.push_back(Message(next_command_payload));
     }
     return messages;
@@ -81,7 +88,7 @@ void MessageBox::event_loop() {
         // packet.
         */
         if(!(this->is_initialized | msg.payload.size())) {
-            std::cout << "Now we are initialized!\n";
+            LOG_F(INFO, "Now we are initialized!");
             is_initialized = true;
             connection_promise.set_value();
         }
@@ -99,7 +106,7 @@ void MessageBox::event_loop() {
         }
 
         if(msg.type & Message::Types::Hello) {
-            std::cout << "Received new hello packet\n";
+            LOG_F(WARNING, "Received new hello packet -- session reset?");
             is_initialized = false;
             *this << Message(Message::Types::ACK);
         }
@@ -118,7 +125,7 @@ void MessageBox::event_loop() {
         // relevant callback or whatever
         session_id = msg.uid;
     }
-    std::cout << "Leaving handler thread\n";
+    //std::cout << "Leaving handler thread\n";
 }
 
 MessageBox::~MessageBox() {
@@ -131,9 +138,9 @@ MessageBox::MessageBox() {
 
 void MessageBox::registerCallback(const std::string & command_name, const callback_t & callback_function) {
     if(callback_map.find(command_name) != callback_map.end()) {
-        std::cout << "Warning: Re-registering callback \"" << command_name << "\"!\n";
+        LOG_F(WARNING, "Re-registering callback \"%s\"",  command_name.c_str());
     } else {
-        std::cout << "Registering callback \"" << command_name << "\"!\n";
+        LOG_F(INFO, "Registering callback \"%s\"", command_name.c_str());
     }
     callback_map[command_name] = callback_function;
 }

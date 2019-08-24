@@ -1,42 +1,32 @@
 #include "DeviceInfo.hpp"
-#include <json.hpp>
 #include <functional>
 #include <iostream>
 #include <assert.h>
+#include "loguru.hpp"
 
+#include <json.hpp>
 using json = nlohmann::json;
-
-void ATEMDeviceInfo::dummy_callback(const Message &message) {
-    (void)message; // avoid unused var message
-    std::cout << "Dummy callback encountered\n";
-}
 
 ATEMDeviceInfo::ATEMDeviceInfo(MessageBox * mbox) {
     this->mbox = mbox;
-    mbox->registerCallback("_ver", std::bind(&ATEMDeviceInfo::dummy_callback, this, std::placeholders::_1));
     mbox->registerCallback("_top", std::bind(&ATEMDeviceInfo::parse_topology, this, std::placeholders::_1));
-    mbox->registerCallback("Time", std::bind(&ATEMDeviceInfo::handle_state_change, this, std::placeholders::_1));
+    mbox->registerCallback("Time", std::bind(&ATEMDeviceInfo::handle_state_timecode, this, std::placeholders::_1));
 }
 
-void update_state(const json &data) {
-    std::cout << data.dump() << "\n";
-}
-
-void ATEMDeviceInfo::handle_state_change(const Message &message) {
+json ATEMDeviceInfo::handle_state_timecode(const Message &message) {
     json state_change;
     char timecode[13];
     snprintf(timecode, sizeof(timecode), "%02d:%02d:%02d.%02d",
             message.payload[8], message.payload[9],
             message.payload[10], message.payload[11]);
 
+    state_change["module"] = "device_info";
     state_change["timecode"] = timecode;
     state_change["subject"] = "last_state_change_timecode";
-    update_state(state_change);
+    return(state_change);
 }
 
-void ATEMDeviceInfo::parse_topology(const Message &message) {
-    std::cout << "Topology callback encountered\n";
-//    assert(message.payload.size() == 12);
+json ATEMDeviceInfo::parse_topology(const Message &message) {
     json state_update;
 
     num_MEs = message.payload[8];
@@ -60,5 +50,5 @@ void ATEMDeviceInfo::parse_topology(const Message &message) {
     state_update["num_supersrcs"] = num_supersrcs;
     state_update["has_SD_output"] = has_SD_output;
 
-    update_state(state_update);
+    return(state_update);
 }

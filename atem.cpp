@@ -7,8 +7,8 @@ ATEM::ATEM() : DeviceInfo(&mbox), MixEffects(&mbox)
 {
 }
 
-void ATEM::process_events() {
-    mbox.process_events();
+std::string ATEM::process_events() {
+    return mbox.process_events();
 }
 
 void ATEM::connect(std::string hostname) {

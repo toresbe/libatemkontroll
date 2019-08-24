@@ -11,6 +11,9 @@
 #include "network/UDPSocket.hpp"
 #include "network/Message.hpp"
 
+#include <json.hpp>
+using json = nlohmann::json;
+
 class MessageBox {
     public:
         std::deque<Message> inbox;
@@ -23,12 +26,13 @@ class MessageBox {
 
         std::promise<void> connection_promise;
 
-        typedef std::function<void(const Message & message)> callback_t;
+        typedef std::function<json(const Message & message)> callback_t;
         void registerCallback(const std::string & command_name, const callback_t & callback_function);
 
         void connect(std::string hostname);
         void operator<<(const Message &msg);
-        void process_events();
+        std::string process_events();
+        std::deque<std::string> event_messages;
         MessageBox();
         ~MessageBox();
         std::future<void> send_message(const Message &msg);
