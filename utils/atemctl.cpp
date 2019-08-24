@@ -7,6 +7,7 @@ void usage() {
     std::cout << "Usage:\n";
     std::cout << "\tatemctl [program|preview] [input_index]\n";
     std::cout << "\tatemctl take [auto|cut]\n";
+    std::cout << "\tatemctl nop\n";
 }
 
 uint16_t read_input_index(char *str) {
@@ -21,11 +22,15 @@ uint16_t read_input_index(char *str) {
 }
 
 int main(int argc, char *argv[]) {
+    ATEM atem;
     if(argc != 3) {
-        usage();
-        exit(1);
+        if((argc == 2) && !strcmp(argv[1], "nop")) {
+            atem.connect("10.3.2.1");
+        } else {
+            usage();
+            exit(1);
+        }
     } else {
-        ATEM atem;
         if(!strcmp(argv[1], "program")) {
             uint16_t input_index = read_input_index(argv[2]);
             atem.connect("10.3.2.1");
@@ -43,9 +48,9 @@ int main(int argc, char *argv[]) {
                 atem.MixEffects.take_cut();
             }
         }
+    }
     while(1) {
         atem.process_events();
     };
-    }
     return(0);
 }
