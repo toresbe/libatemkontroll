@@ -4,7 +4,7 @@
 #include <assert.h>
 #include "loguru.hpp"
 
-#include <json.hpp>
+#include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
 ATEMDeviceInfo::ATEMDeviceInfo(MessageBox * mbox) {

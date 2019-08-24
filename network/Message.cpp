@@ -3,8 +3,8 @@
 #include <iostream>
 #include <assert.h>
 
-uint16_t Message::get_word(const std::vector<uint8_t> & input, int index) {
-    return input[index+1] | (input[index] << 8);
+uint16_t get_word(const std::vector<uint8_t> & input, int byte_index) {
+    return input[byte_index+1] | (input[byte_index] << 8);
 }
 
 void Message::build_cmd_payload(const std::vector<uint8_t> &arguments) {

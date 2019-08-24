@@ -7,7 +7,7 @@ class Message {
     private:
 
     public:
-        static uint16_t get_word(const std::vector<uint8_t> & input, int index);
+        static uint16_t get_word(const std::vector<uint8_t> & input, int byte_index);
         enum Types {
             NoCmd = 0x0,
             AckReq = 0x1,
