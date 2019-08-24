@@ -1,6 +1,4 @@
 #include "network/MessageBox.hpp"
-#include <nlohmann/json.hpp>
-using json = nlohmann::json;
 
 #include <json.hpp>
 using json = nlohmann::json;

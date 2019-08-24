@@ -2,7 +2,7 @@
 #include <assert.h>
 #include <iostream>
 
-#include <nlohmann/json.hpp>
+#include <json.hpp>
 using json = nlohmann::json;
 
 ATEMMixEffects::ATEMMixEffects(MessageBox * mbox) {

@@ -1,5 +1,5 @@
 #include "network/MessageBox.hpp" 
-#include <nlohmann/json.hpp>
+#include <json.hpp>
 using json = nlohmann::json;
 
 class ATEMMixEffects {
