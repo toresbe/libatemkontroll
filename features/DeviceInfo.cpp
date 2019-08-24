@@ -25,14 +25,12 @@ void update_state(const json &data) {
 void ATEMDeviceInfo::handle_state_change(const Message &message) {
     json state_change;
     char timecode[13];
-//    for(auto x: message.payload) {
-//        printf("%02X ", x);
-//    } printf("\n");
     snprintf(timecode, sizeof(timecode), "%02d:%02d:%02d.%02d",
             message.payload[8], message.payload[9],
             message.payload[10], message.payload[11]);
 
     state_change["timecode"] = timecode;
+    state_change["subject"] = "last_state_change_timecode";
     update_state(state_change);
 }
 
