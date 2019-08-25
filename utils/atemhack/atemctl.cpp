@@ -12,6 +12,32 @@
 #include <json.hpp>
 using json = nlohmann::json;
 
+class ButtonInputMap {
+    public:
+        std::map<unsigned int, unsigned int> map = {
+            {0, 0},
+            {1, 1},
+            {2, 2},
+            {23, 1000},
+        };
+
+    unsigned int get_input(unsigned int button) {
+        if(map.count(button)) {
+            return map[button];
+        }
+        return 0;
+    }
+
+    unsigned int get_button(unsigned int input) {
+        for (auto x: map) {
+            if(x.second == input) {
+                return x.first;
+            }
+        }
+        return 0;
+    }
+};
+
 uint16_t read_input_index(char *str) {
     int input_index;
     try {
@@ -53,27 +79,40 @@ int main(int argc, char *argv[]) {
     loguru::add_file("everything.log", loguru::Append, loguru::Verbosity_MAX);
     LOG_F(INFO, "Starting up");
     ATEM atem;
+    ButtonInputMap DVSMap;
     atem.connect("10.3.2.1");
 
     bool running = true;
-    while(running) 
+    while(running) {
         if(input_available()) {
             int output, input;
             std::string line; 
             std::getline(std::cin, line); 
             if(sscanf(line.c_str(), "%d, %d", &input, &output) == 2) {
                 LOG_F(1, "Got command: output bus %d -> input %d", output, input);
-                command(atem, output, input);
+                auto input_index = DVSMap.get_input(input);
+                command(atem, output, input_index);
             } else {
-                LOG_F(WARNING, "SYNTAX ERROR.\n");
+                LOG_F(WARNING, "SYNTAX ERROR");
             }
         }
-    auto events_string = atem.process_events();
-    json events;
-    try {
-        events = events_string;
-    } catch (std::exception &e) {
-                LOG_F(WARNING, "Invalid JSON returned.");
+        auto events_string = atem.process_events();
+        json events;
+        try {
+            if(events_string != "") {
+                events = json::parse(events_string);
+                LOG_F(INFO, events_string.c_str());
+            }
+        } catch (std::exception &e) {
+            LOG_F(WARNING, "Invalid JSON returned.");
+        }
+        if(events["module"] == "ME" && events["subject"] == "preview_input_changed") {
+            auto button = DVSMap.get_button(events["input_index"]);
+            std::cout << button << ", 0, 1" << "\n";
+        } else if(events["module"] == "ME" && events["subject"] == "program_input_changed") {
+            auto button = DVSMap.get_button(events["input_index"]);
+            std::cout << button << ", 1, 1" << "\n";
+        }
     }
 
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
