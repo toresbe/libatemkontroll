@@ -11,7 +11,8 @@ cases.
 
 ## Examples
 
-```#include <atem.hpp>
+```
+#include <atem.hpp>
 
 // Set ME 0's PGM to color bars
 int main() {
@@ -30,7 +31,8 @@ int main() {
 
 ## Requirements
 
-``` apt-get install nlohmann-json-dev
+```
+apt-get install nlohmann-json-dev
 ```
 
 ## Todo
