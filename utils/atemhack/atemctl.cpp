@@ -18,6 +18,7 @@ class ButtonInputMap {
             {0, 0},
             {1, 1},
             {2, 2},
+            {3, 3},
             {23, 1000},
         };
 
@@ -29,6 +30,30 @@ class ButtonInputMap {
     }
 
     unsigned int get_button(unsigned int input) {
+        for (auto x: map) {
+            if(x.second == input) {
+                return x.first;
+            }
+        }
+        return 0;
+    }
+};
+
+class TransButtonInputMap {
+    public:
+        std::map<unsigned int, std::string> map = {
+           {46, "auto"},
+           {47, "cut"}
+        };
+
+    std::string get_input(unsigned int button) {
+        if(map.count(button)) {
+            return map[button];
+        }
+        return "";
+    }
+
+    unsigned int get_button(std::string input) {
         for (auto x: map) {
             if(x.second == input) {
                 return x.first;
@@ -59,7 +84,7 @@ bool input_available() {
     return (FD_ISSET(0, &fds));
 }
 
-int command(ATEM &atem, int bus, int input) {
+void me_command(ATEM &atem, int bus, int input) {
     //#uint16_t input_index = read_input_index("2");
     uint16_t input_index = input;
     if (input_index == 23) input_index = 1000;
@@ -74,24 +99,45 @@ int command(ATEM &atem, int bus, int input) {
     }
 }
 
+void trans_command(ATEM &atem, std::string input) {
+    if (input == "cut"){
+        atem.MixEffects.take_cut();
+    }
+    if (input == "auto"){
+        atem.MixEffects.take_auto();
+    }
+}
+
 int main(int argc, char *argv[]) {
     loguru::init(argc, argv);
     loguru::add_file("everything.log", loguru::Append, loguru::Verbosity_MAX);
     LOG_F(INFO, "Starting up");
     ATEM atem;
     ButtonInputMap DVSMap;
-    atem.connect("10.3.2.1");
+    TransButtonInputMap TransMap;
+    atem.connect("10.73.1.100");
 
     bool running = true;
     while(running) {
         if(input_available()) {
             int output, input;
+            char function[5];
             std::string line; 
             std::getline(std::cin, line); 
-            if(sscanf(line.c_str(), "%d, %d", &input, &output) == 2) {
-                LOG_F(1, "Got command: output bus %d -> input %d", output, input);
-                auto input_index = DVSMap.get_input(input);
-                command(atem, output, input_index);
+            if(sscanf(line.c_str(), "%s %d, %d", function, &input, &output) == 3) {
+                if(strncmp(function, "me:", 3)==0){
+                    LOG_F(1, "Got command: output bus %d -> input %d", output, input);
+                    auto input_index = DVSMap.get_input(input);
+                    me_command(atem, output, input_index);
+                }
+                if(strncmp(function, "ta0:", 4)==0){
+                    LOG_F(1, "Got trans key %d/%d", output, input);
+                    // concat; ex: 4, 7 ==> 47
+                    int index = (input * 10)+output;
+
+                    auto cmd = TransMap.get_input(index);
+                    //trans_command(atem, cmd);
+                }
             } else {
                 LOG_F(WARNING, "SYNTAX ERROR");
             }
