@@ -136,7 +136,7 @@ int main(int argc, char *argv[]) {
                     int index = (input * 10)+output;
 
                     auto cmd = TransMap.get_input(index);
-                    //trans_command(atem, cmd);
+                    trans_command(atem, cmd);
                 }
             } else {
                 LOG_F(WARNING, "SYNTAX ERROR");
