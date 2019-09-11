@@ -9,6 +9,7 @@ ATEMMixEffects::ATEMMixEffects(MessageBox * mbox) {
     this->mbox = mbox;
     mbox->registerCallback("PrgI", std::bind(&ATEMMixEffects::handle_PrgI, this, std::placeholders::_1));
     mbox->registerCallback("PrvI", std::bind(&ATEMMixEffects::handle_PrvI, this, std::placeholders::_1));
+    mbox->registerCallback("TrPs", std::bind(&ATEMMixEffects::handle_TrPs, this, std::placeholders::_1));
 }
 
 json ATEMMixEffects::handle_PrvI(const Message &message) {
@@ -27,6 +28,17 @@ json ATEMMixEffects::handle_PrgI(const Message &message) {
     new_program["index"] = message.payload[8];
     new_program["input_index"] = Message::get_word(message.payload, 10);
     return new_program;
+}
+
+json ATEMMixEffects::handle_TrPs(const Message &message) {
+    json new_transition_position;
+    new_transition_position["module"] = "ME";
+    new_transition_position["subject"] = "new_transition_position";
+    new_transition_position["index"] = message.payload[8];
+    new_transition_position["active"] = message.payload[9];
+    new_transition_position["frames_remaining"] = message.payload[10];
+    new_transition_position["position"] = Message::get_word(message.payload, 12);
+    return new_transition_position;
 }
 
 void ATEMMixEffects::set_preview(uint16_t input_index) {

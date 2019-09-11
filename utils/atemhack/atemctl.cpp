@@ -152,14 +152,18 @@ int main(int argc, char *argv[]) {
         } catch (std::exception &e) {
             LOG_F(WARNING, "Invalid JSON returned.");
         }
-        if(events["module"] == "ME" && events["subject"] == "preview_input_changed") {
-            auto button = DVSMap.get_button(events["input_index"]);
-            std::cout << button << ", 0, 1" << "\n";
-        } else if(events["module"] == "ME" && events["subject"] == "program_input_changed") {
-            auto button = DVSMap.get_button(events["input_index"]);
-            std::cout << button << ", 1, 1" << "\n";
+        if(events["module"] == "ME"){
+            if(events["subject"] == "preview_input_changed") {
+                auto button = DVSMap.get_button(events["input_index"]);
+                std::cout << "me0: " << button << ", 0, 1" << "\n";
+            } else if(events["subject"] == "program_input_changed") {
+                auto button = DVSMap.get_button(events["input_index"]);
+                std::cout << "me0: " << button << ", 1, 1" << "\n";
+            } else if(events["subject"] == "new_transition_position") {
+                std::cout << "tb0: " << events["position"] << ", " << events["frames_remaining"] << "\n";
+            }
+
         }
     }
-
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
 }
