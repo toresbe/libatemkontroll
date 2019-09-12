@@ -125,7 +125,7 @@ int main(int argc, char *argv[]) {
             std::string line; 
             std::getline(std::cin, line); 
             if(sscanf(line.c_str(), "%s %d, %d", function, &input, &output) == 3) {
-                if(strncmp(function, "me:", 3)==0){
+                if(strncmp(function, "me0:", 3)==0){
                     LOG_F(1, "Got command: output bus %d -> input %d", output, input);
                     auto input_index = DVSMap.get_input(input);
                     me_command(atem, output, input_index);
@@ -160,7 +160,7 @@ int main(int argc, char *argv[]) {
                 auto button = DVSMap.get_button(events["input_index"]);
                 std::cout << "me0: " << button << ", 1, 1" << "\n";
             } else if(events["subject"] == "new_transition_position") {
-                std::cout << "tb0: " << events["position"] << ", " << events["frames_remaining"] << "\n";
+                std::cout << "tb0: " << events["position"] << ", " << events["frames_remaining"] << ", " << events["active"] << "\n";
             }
 
         }
