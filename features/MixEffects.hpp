@@ -17,5 +17,6 @@ class ATEMMixEffects {
         void take_auto();
         json handle_PrgI(const Message &message);
         json handle_PrvI(const Message &message);
+        json handle_TrPs(const Message &message);
         void take_cut();
 };
