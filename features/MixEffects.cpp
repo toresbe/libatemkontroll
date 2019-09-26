@@ -14,19 +14,31 @@ ATEMMixEffects::ATEMMixEffects(MessageBox * mbox) {
 
 json ATEMMixEffects::handle_PrvI(const Message &message) {
     json new_preview;
+
+    auto input_index = Message::get_word(message.payload, 10);
+    auto me_index = message.payload[8];
+    state[me_index].preview_input = input_index;
+
     new_preview["module"] = "ME";
     new_preview["subject"] = "preview_input_changed";
-    new_preview["index"] = message.payload[8];
-    new_preview["input_index"] = Message::get_word(message.payload, 10);
+    new_preview["index"] = me_index;
+    new_preview["input_index"] = input_index;
+
     return new_preview;
 }
 
 json ATEMMixEffects::handle_PrgI(const Message &message) {
     json new_program;
+
+    auto input_index = Message::get_word(message.payload, 10);
+    auto me_index = message.payload[8];
+    state[me_index].program_input = input_index;
+
     new_program["module"] = "ME";
     new_program["subject"] = "program_input_changed";
-    new_program["index"] = message.payload[8];
-    new_program["input_index"] = Message::get_word(message.payload, 10);
+    new_program["index"] = me_index;
+    new_program["input_index"] = input_index;
+
     return new_program;
 }
 

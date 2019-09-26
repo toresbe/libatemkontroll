@@ -8,6 +8,7 @@ class ATEMMixEffects {
         uint8_t me_index = 0;
         typedef struct me_state {
             uint16_t program_input;
+            uint16_t preview_input;
         } me_state;
         me_state state[8];
     public:
