@@ -27,7 +27,7 @@ int main() {
 * `atemctl` - a simple command-line utility to set program/preview or enact
   transitions
 * `atemhack` - A utility developed in collaboration with AGS to interact with
-  their [https://gitlab.ags.etc.tu-bs.de/eggert/dvs8000](DVS8000 hack project).
+  their [DVS8000 hack project](https://gitlab.ags.etc.tu-bs.de/eggert/dvs8000).
 
 ## Requirements
 
