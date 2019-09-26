@@ -74,6 +74,10 @@ void ATEMMixEffects::take_auto() {
     future.wait();
 }
 
+uint16_t ATEMMixEffects::get_program(int me_index) {
+    return state[me_index].program_input;
+}
+
 void ATEMMixEffects::set_program(uint16_t input_index) {
     std::vector<uint8_t> arguments = {me_index,
                                      0x00};// Unknown

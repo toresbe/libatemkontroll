@@ -14,7 +14,9 @@ class ATEMMixEffects {
     public:
         ATEMMixEffects(MessageBox * mbox);
         void set_program(uint16_t input_index);
+        uint16_t get_program(int me_index);
         void set_preview(uint16_t input_index);
+        uint16_t get_preview(int me_index);
         void take_auto();
         json handle_PrgI(const Message &message);
         json handle_PrvI(const Message &message);
