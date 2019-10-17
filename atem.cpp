@@ -3,7 +3,7 @@
 #include <chrono>         // std::chrono::seconds
 #include <iostream>
 
-ATEM::ATEM() : DeviceInfo(&mbox), MixEffects(&mbox)
+ATEM::ATEM() : DeviceInfo(&mbox), MixEffects(&mbox), AudioMixer(&mbox)
 {
 }
 
